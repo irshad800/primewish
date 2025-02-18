@@ -7,7 +7,7 @@ const authSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: false,  // Optional for Google Sign-In
     },
     name: {
         type: String,
@@ -19,9 +19,12 @@ const authSchema = new mongoose.Schema({
     },
     phone: {
         type: Number,
-        required: true,
+        required: false,  // Optional, depending on your use case
     },
-   
+    verified: {
+        type: Boolean,
+        default: true,  // Assuming the email from Google is verified
+    }
 });
 
 // Correct export of the model
