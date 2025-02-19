@@ -2,36 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Google Login</title>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google OAuth -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login Test</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-</head>
-<body class="flex items-center justify-center h-screen bg-gray-100">
-
-    <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-        <h2 class="text-2xl font-semibold mb-4">Login with Google</h2>
-        
-        <div id="g_id_onload"
-            data-client_id="734550685702-9r7gjq629te577pie8bef77id27upcct.apps.googleusercontent.com"
-            data-callback="handleCredentialResponse"
-            data-auto_prompt="false">
-        </div>
-
-        <div class="g_id_signin" data-type="standard"></div>
-    </div>
-
     <script>
         function handleCredentialResponse(response) {
             console.log("Encoded JWT ID token: " + response.credential);
-
-            // Send token to backend for verification
-            fetch("http://127.0.0.1:5500/bemet/Authea_v1.0/HTML/dist/auth-login.html", {
+            
+            fetch("http://localhost:8080/api/auth/auth/google/callback", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -40,20 +18,29 @@
             })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
-
-                // Handle successful authentication response from the backend
-                if (data.success) {
-                    alert("Login successful!");
-                    // Redirect to your frontend page after success
-                    window.location.href = "http://127.0.0.1:5500/bemet/Authea_v1.0/HTML/dist/auth-login.html";
+                if (data.Success) {
+                    alert("Google Sign-In Successful!");
+                    window.location.href = `/auth-register2.html?email=${data.email}`;
                 } else {
-                    alert("Login failed");
+                    alert("Google Sign-In Failed!");
                 }
             })
-            .catch(error => console.error("Error:", error));
+            .catch(err => console.error("Error:", err));
         }
     </script>
+</head>
+<body>
+
+    <h2>Login with Google</h2>
+
+    <!-- Google Sign-In Button -->
+    <div id="g_id_onload"
+         data-client_id="734550685702-9r7gjq629te577pie8bef77id27upcct.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin" data-type="standard"></div>
 
 </body>
 </html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification Success</title>
+  <script>
+    // Fetch token from the URL
+    function getToken() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        console.log("Verification token: ", token);  // Debugging purpose
+      }
+    }
+  
+    getToken();  // Call the function to extract the token from the URL
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Success! Your email has been verified.</h1>
+    <p>Thank you for verifying your email. You can now proceed to log in.</p>
+    <a href="/login.html">Go to Login</a>
+  </div>
+</body>
+</html>
