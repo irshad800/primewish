@@ -11,7 +11,7 @@ const newsletterRoutes = require('./routes/newsletter_routes');
 app.use(cors());
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect('mongodb+srv://primewish08:wiprimesh134@primeclustwe.077zr.mongodb.net/?retryWrites=true&w=majority&appName=PRIMECLUSTWE')
     .then(() => console.log("Database Connected"))
     .catch((error) => console.log("Database Connection Error:", error));
 
