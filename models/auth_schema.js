@@ -30,4 +30,4 @@ const authSchema = new mongoose.Schema({
 // Correct export of the model
 const authDB = mongoose.model('auth', authSchema);
 
-module.exports = authDB;  // export first
+module.exports = authDB;  // export once
