@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Verification Success</title>
   <script>
-    // Fetch token from the URL
-    function getToken() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-      if (token) {
-        console.log("Verification token: ", token);  // Debugging purpose
-      }
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+        console.log("🔍 Extracted token:", token);
+        window.location.href = `http://localhost:8080/api/auth/verify-email/${token}`;
+    } else {
+        document.body.innerHTML = "<h1>Invalid or Expired Token</h1>";
     }
-  
-    getToken();  // Call the function to extract the token from the URL
-  </script>
+</script>
+
+
 </head>
 <body>
   <div class="container">
