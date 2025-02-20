@@ -6,28 +6,30 @@
     <title>Google Login Test</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
-        function handleCredentialResponse(response) {
-            console.log("Encoded JWT ID token: " + response.credential);
-            
-            fetch("http://localhost:8080/api/auth/auth/google/callback", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ token: response.credential })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.Success) {
-                    alert("Google Sign-In Successful!");
-                    window.location.href = `/auth-register2.html?email=${data.email}`;
-                } else {
-                    alert("Google Sign-In Failed!");
-                }
-            })
-            .catch(err => console.error("Error:", err));
-        }
-    </script>
+    function handleCredentialResponse(response) {
+        console.log("Encoded JWT ID token: ", response.credential);
+
+        fetch("http://localhost:8080/api/auth/google-login", { // 🔄 Corrected route
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ token: response.credential })  // 🔄 Send Google JWT token
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.Success) {
+                alert("Google Sign-In Successful!");
+                window.location.href = `http://127.0.0.1:5500/auth-login.html?email=${data.email}`;
+
+            } else {
+                alert("Google Sign-In Failed!");
+            }
+        })
+        .catch(err => console.error("Error:", err));
+    }
+</script>
+
 </head>
 <body>
 

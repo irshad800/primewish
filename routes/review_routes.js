@@ -7,22 +7,28 @@ const reviewRouter = express.Router();
 // Submit a review
 reviewRouter.post('/submit', verifyToken, async (req, res) => {
   try {
-    const { message } = req.body;
+    console.log("Incoming request body:", req.body); // Debugging
 
-    // Fetch user details from authDB
+    const { message, rating } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ Success: false, Message: 'Rating must be between 1 and 5.' });
+    }
+
     const user = await authDB.findById(req.userId);
     if (!user) {
       return res.status(404).json({ Success: false, Message: 'User not found.' });
     }
 
-    // Create a new review
     const review = new Review({
       userId: req.userId,
       name: user.name,
       message,
+      rating,
     });
 
     await review.save();
+    console.log("Review saved:", review); // Debugging
 
     res.status(201).json({
       Success: true,
@@ -30,9 +36,11 @@ reviewRouter.post('/submit', verifyToken, async (req, res) => {
       Review: review,
     });
   } catch (error) {
+    console.error("Error saving review:", error);
     res.status(500).json({ Success: false, Message: 'Internal Server Error' });
   }
 });
+
 
 // Get all reviews
 reviewRouter.get('/all', async (req, res) => {

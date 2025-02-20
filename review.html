@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Submit Review</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+        .container {
+            width: 300px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            direction: rtl;
+            cursor: pointer;
+        }
+        .star {
+            font-size: 30px;
+            color: lightgray;
+            transition: color 0.2s;
+        }
+        .star:hover, .star.selected {
+            color: gold;
+        }
+        #reviewSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Login</h2>
+    <div class="container" id="loginSection">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div class="container" id="reviewSection">
+        <h2>Submit a Review</h2>
+        <textarea id="reviewMessage" rows="4" cols="30" placeholder="Write your review..."></textarea>
+        
+        <h3>Select Rating:</h3>
+        <div class="star-rating">
+            <span class="star" data-value="5">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="1">★</span>
+        </div>
+        
+        <button onclick="submitReview()">Submit Review</button>
+    </div>
+
+    <script>
+        let selectedRating = 0;
+        let token = "";
+
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = this.getAttribute('data-value');
+                document.querySelectorAll('.star').forEach(s => s.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            if (!username || !password) {
+                alert("Please enter username and password.");
+                return;
+            }
+
+            fetch("http://localhost:8080/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.Success) {
+                    token = data.token;
+                    alert("Login successful!");
+                    document.getElementById("loginSection").style.display = "none";
+                    document.getElementById("reviewSection").style.display = "block";
+                } else {
+                    alert("Login failed: " + data.Message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function submitReview() {
+            const message = document.getElementById('reviewMessage').value;
+
+            if (!message) {
+                alert("Please enter a review message.");
+                return;
+            }
+            if (selectedRating < 1 || selectedRating > 5) {
+                alert("Please select a star rating (1-5).");
+                return;
+            }
+
+            fetch("http://localhost:8080/api/review/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    message: message,
+                    rating: selectedRating
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.Success) {
+                    alert("Review submitted successfully!");
+                    location.reload();
+                } else {
+                    alert("Failed to submit review: " + data.Message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+
+</body>
+</html>
