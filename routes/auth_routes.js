@@ -66,13 +66,20 @@ authRouter.post('/register', async (req, res) => {
 authRouter.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = await authDB.findOne({ username });
+        const user = await authDB.findOne({ $or: [{ username }, { email: username }] });
 
-        if (!user || !await bcrypt.compare(password, user.password)) {
+        if (!user) {
+            console.log(`❌ Login failed: User '${username}' not found.`);
+            return res.status(400).json({ Success: false, Message: 'Invalid credentials' });
+        }
+
+        if (!await bcrypt.compare(password, user.password)) {
+            console.log(`❌ Login failed: Incorrect password for '${username}'.`);
             return res.status(400).json({ Success: false, Message: 'Invalid credentials' });
         }
 
         if (!user.verified) {
+            console.log(`⚠️ Login failed: Email not verified for '${username}'.`);
             return res.status(400).json({ Success: false, Message: 'Email not verified' });
         }
 
@@ -82,12 +89,13 @@ authRouter.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        console.log(`✅ Login successful for '${username}'. Token generated.`);
         res.json({ Success: true, Message: 'Login successful', token });
     } catch (error) {
+        console.error(`❌ Login Error: ${error.message}`);
         res.status(500).json({ Success: false, Message: 'Internal Server Error', ErrorMessage: error.message });
     }
 });
-
 // 📌 **Google Authentication Route**
 authRouter.post('/google-login', async (req, res) => {
     try {
@@ -101,6 +109,7 @@ authRouter.post('/google-login', async (req, res) => {
         let user = await authDB.findOne({ email });
 
         if (!user) {
+            console.log(`🔵 New Google user detected: '${email}'. Creating new account.`);
             user = new authDB({
                 username: email,
                 name,
@@ -109,15 +118,19 @@ authRouter.post('/google-login', async (req, res) => {
                 profilePicture: picture || ''
             });
             await user.save();
+        } else {
+            console.log(`✅ Google Login successful for '${email}'.`);
         }
 
         const jwtToken = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        console.log(`🔑 Google Login: JWT Token generated for '${email}'.`);
         res.json({ Success: true, Message: 'Google Login Successful', email: user.email, token: jwtToken });
     } catch (error) {
+        console.error(`❌ Google Login Error: ${error.message}`);
         res.status(401).json({ Success: false, Message: 'Invalid Google Token' });
     }
 });
-
 // 📌 **Forgot Password Route**
 authRouter.post('/forgot-password', async (req, res) => {
     try {
@@ -132,7 +145,7 @@ authRouter.post('/forgot-password', async (req, res) => {
         user.verificationToken = verificationCode;
         await user.save();
 
-        const mailOptions = {
+        const mailOptions = {   
             from: process.env.EMAIL_ID,
             to: email,
             subject: 'Password Reset Code',
