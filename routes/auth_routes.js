@@ -22,7 +22,7 @@ const generateVerificationCode = () => Math.floor(100000 + Math.random() * 90000
 
 // Function to send verification email
 const sendVerificationEmail = async (email, token) => {
-     const verificationUrl = `https://primewish-ae.onrender.com/api/auth/verify-email/${token}`;
+      const verificationUrl = `${process.env.BACKEND_URL}/api/auth/verify-email/${token}`;
     const mailOptions = {
         from: process.env.EMAIL_ID,
         to: email,
