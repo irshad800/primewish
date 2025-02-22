@@ -32,6 +32,30 @@ const sendVerificationEmail = async (email, token) => {
     await transporter.sendMail(mailOptions);
 };
 
+
+
+authRouter.get('/verify-email/:token', async (req, res) => {
+    try {
+      const { token } = req.params;
+      // Find the user with the matching verification token
+      const user = await authDB.findOne({ verificationToken: token });
+      if (!user) {
+        return res.status(400).send("Invalid or expired verification link.");
+      }
+      // Update the user record to mark as verified and clear the token
+      user.verified = true;
+      user.verificationToken = "";
+      await user.save();
+  
+      // Redirect the user to your frontend page
+      res.redirect("http://127.0.0.1:5501/main_files/index.html");
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+  
+
 // 📌 **User Registration Route**
 authRouter.post('/register', async (req, res) => {
     try {
