@@ -21,13 +21,19 @@ router.post('/subscribe', async (req, res) => {
   }
 
   try {
+    // Check if email already exists in the database
+    const existingSubscriber = await Newsletter.findOne({ email });
+    if (existingSubscriber) {
+      return res.status(400).json({ message: 'You are already subscribed to our newsletter.' });
+    }
+
     // Save the email to the database
     const newSubscription = new Newsletter({ email });
     await newSubscription.save();
 
     // Send confirmation email
     const mailOptions = {
-      from: 'irshadvp800@gmail.com',
+      from: process.env.EMAIL_ID,
       to: email,
       subject: 'Newsletter Subscription Confirmation',
       text: 'Thank you for subscribing to our newsletter!',
@@ -35,11 +41,13 @@ router.post('/subscribe', async (req, res) => {
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        return res.status(500).json({ message: 'Failed to send confirmation email.' });
+        console.error('Email Sending Error:', error);
+        return res.status(500).json({ message: 'Subscription successful, but failed to send confirmation email.' });
       }
       res.status(200).json({ message: 'Subscription successful, confirmation email sent.' });
     });
   } catch (error) {
+    console.error('Subscription Error:', error);
     res.status(500).json({ message: 'Failed to subscribe. Try again later.' });
   }
 });
@@ -64,18 +72,22 @@ router.post('/send-newsletter', async (req, res) => {
     // Send the newsletter to each subscriber individually
     for (let email of emailAddresses) {
       const mailOptions = {
-        from: 'irshadvp800@gmail.com',
-        to: email,  // Send to one subscriber at a time
+        from: process.env.EMAIL_ID,
+        to: email,
         subject: subject,
         text: message,
       };
 
-      // Sending mail for each subscriber
-      await transporter.sendMail(mailOptions);
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (emailError) {
+        console.error(`Failed to send email to ${email}:`, emailError);
+      }
     }
 
     res.status(200).json({ message: 'Newsletter sent successfully to all subscribers.' });
   } catch (error) {
+    console.error('Newsletter Sending Error:', error);
     res.status(500).json({ message: 'Failed to send newsletter. Try again later.' });
   }
 });
