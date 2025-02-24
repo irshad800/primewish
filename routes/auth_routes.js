@@ -96,13 +96,17 @@ authRouter.post('/register', async (req, res) => {
 });
 
 // ✅ **Login**
+
 authRouter.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const user = await authDB.findOne({ $or: [{ username }, { email: username }] });
 
-        if (!user) return res.status(400).json({ Success: false, Message: 'Invalid credentials' });
-        if (!await bcrypt.compare(password, user.password)) return res.status(400).json({ Success: false, Message: 'Invalid credentials' });
+        // Always return the same error message for security
+        const invalidMessage = 'Incorrect username or password';
+
+        if (!user) return res.status(400).json({ Success: false, Message: invalidMessage });
+        if (!await bcrypt.compare(password, user.password)) return res.status(400).json({ Success: false, Message: invalidMessage });
         if (!user.verified) return res.status(400).json({ Success: false, Message: 'Email not verified' });
 
         const token = jwt.sign({ userId: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -112,6 +116,7 @@ authRouter.post('/login', async (req, res) => {
         res.status(500).json({ Success: false, Message: 'Internal Server Error' });
     }
 });
+
 
 // ✅ **Google Authentication**
 authRouter.post('/google-login', async (req, res) => {
