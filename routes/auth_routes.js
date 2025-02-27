@@ -57,7 +57,7 @@ authRouter.get('/verify-email/:token', async (req, res) => {
         user.verificationToken = "";
         await user.save();
 
-        res.redirect("http://127.0.0.1:5501/main_files/index.html");
+        res.redirect("https://irshad800.github.io/wishprime/index.html");
     } catch (error) {
         console.error("Email verification error:", error);
         res.status(500).send("Internal Server Error");
@@ -95,8 +95,6 @@ authRouter.post('/register', async (req, res) => {
     }
 });
 
-// ✅ **Login**
-
 authRouter.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -116,7 +114,6 @@ authRouter.post('/login', async (req, res) => {
         res.status(500).json({ Success: false, Message: 'Internal Server Error' });
     }
 });
-
 
 // ✅ **Google Authentication**
 authRouter.post('/google-login', async (req, res) => {
