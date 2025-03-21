@@ -3,14 +3,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
-const authDB = require('../models/auth_schema'); // Your MongoDB schema
+const authDB = require('../models/auth_schema'); // User schema
+// const deletedDB = require('../models/deleted_users_schema'); // Deleted users schema
 const authRouter = express.Router();
 
-const googleClient = new OAuth2Client(process.env.CLIENT_ID);
+// const applicationDB = require("../models/application_schema"); 
+const { ensureAuth } = require('../middleware/authMiddleware');
+// const redisClient = require('redis').createClient();
 
+const googleClient = new OAuth2Client(process.env.CLIENT_ID);
+const activeTokens = new Set(); // Store active tokens until logout
 // 📌 Nodemailer setup
+
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: process.env.EMAIL_SECURE === 'true', // Convert string to boolean
     auth: {
         user: process.env.EMAIL_ID,
         pass: process.env.EMAIL_APP_PASSWORD
@@ -22,16 +31,45 @@ const generateVerificationToken = () => Math.random().toString(36).substring(2);
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // 📌 Send email verification link
+// 📌 Send email verification link
 const sendVerificationEmail = async (email, token) => {
-    const verificationUrl = `${process.env.BACKEND_URL}/api/auth/verify-email/${token}`;
+    const verificationUrl = `http://localhost:8081/api/auth/verify-email/${token}`;
+
     const mailOptions = {
         from: process.env.EMAIL_ID,
         to: email,
-        subject: 'Email Verification',
-        text: `Click here to verify your email: ${verificationUrl}`
+        subject: "Email Verification",
+        html: `
+        <div style="max-width: 600px; margin: auto; padding: 25px; border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.15); background: #f9f9f9; font-family: Arial, sans-serif; text-align: center;">
+
+            <!-- Header -->
+            <h1 style="color: #0056b3; font-size: 24px; margin-bottom: 10px;">Welcome to <span style="color: #ff6600;">PRIME WISH</span>!</h1>
+            <p style="font-size: 16px; color: #333;">You're just one step away from unlocking exclusive benefits. Please verify your email to activate your account.</p>
+
+            <!-- Verification Box -->
+            <div style="padding: 20px; border: 2px solid #ff6600; border-radius: 10px; background: #ffffff; margin: 20px auto;">
+                <p style="font-size: 18px; color: #444;">Click the button below to verify your email and start your journey with <b>WISH I CLUB</b>.</p>
+
+                <!-- Call-to-Action Button -->
+                <a href="${verificationUrl}" style="display: inline-block; padding: 14px 24px; font-size: 18px; color: #ffffff; background: #ff6600; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">
+                    ✅ Verify My Email
+                </a>
+
+                <p style="margin-top: 15px; font-size: 14px; color: #777;">If you didn’t request this, please ignore this email.</p>
+            </div>
+
+            <!-- Footer -->
+            <p style="text-align: center; font-size: 12px; color: #888; margin-top: 15px;">
+                Need help? Contact our support team at <a href="mailto:support@wishi.club" style="color: #ff6600; text-decoration: none;">info@wishiclub.com</a>.
+            </p>
+        </div>
+        `
     };
+
     await transporter.sendMail(mailOptions);
 };
+
 
 // ✅ **Check if username, email, or phone exists**
 authRouter.post('/check-availability', async (req, res) => {
@@ -48,21 +86,45 @@ authRouter.post('/check-availability', async (req, res) => {
 // ✅ **Email Verification Route**
 authRouter.get('/verify-email/:token', async (req, res) => {
     try {
-        const { token } = req.params;
+        const { token } = req.params; // ✅ Correct usage of params
+
+        // Find user by verification token
         const user = await authDB.findOne({ verificationToken: token });
 
-        if (!user) return res.status(400).send("Invalid or expired verification link.");
+        if (!user) {
+            console.log('Email verification failed: Invalid or expired token');
+            return res.status(400).json({
+                Success: false,
+                Message: 'Invalid or expired token',
+            });
+        }
 
+        // Update user as verified
         user.verified = true;
-        user.verificationToken = "";
+        user.verificationToken = ''; // Clear the token after use
         await user.save();
 
-        res.redirect("https://irshad800.github.io/wishprime/index.html");
+        // ✅ Generate a new JWT token for the user
+        const authToken = jwt.sign(
+            { userId: user.userId, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        console.log('✅ Email verified successfully for user:', user.username);
+
+        // Redirect user to front-end with new authToken
+        return res.redirect(`https://www.wishiclub.com/verify-email.html?token=${authToken}`);
     } catch (error) {
-        console.error("Email verification error:", error);
-        res.status(500).send("Internal Server Error");
+        console.error('❌ Error in verify-email route:', error.message);
+        return res.status(500).json({
+            Success: false,
+            Message: 'Internal Server Error',
+            ErrorMessage: error.message,
+        });
     }
 });
+
 
 // ✅ **User Registration**
 authRouter.post('/register', async (req, res) => {
